@@ -7,12 +7,22 @@ def search(query, num=10, start=0):
     c = pycurl.Curl()
     searchdoc = {
         "query": {
-            "match" : {
-                "text" : {
-                    "query":query,
-                    "minimum_should_match": "30%",
-                }
-            }
+            "bool": {
+                 "must":{
+                      "flt":{
+                          "fields":["text","title"],
+                          "like_text":query,
+                          "max_query_terms":12,
+                          "boost":0.95
+                       }
+                  },
+                 "must_not":{
+                     "match":{"text":"REDIRECT"}
+                  },
+                 "should":{
+                     "match":{"title":query}
+                  }
+             }
         },
         "rescore": {
             "window_size" : 50,
@@ -35,11 +45,11 @@ def search(query, num=10, start=0):
     }
     b = StringIO.StringIO()
     searchjson = json.dumps(searchdoc)
-    url = 'http://localhost:9200/wiki/pages/_search?pretty&_source=title&'+'size='+str(num)+'&from='+str(start)
+    url = 'http://localhost:18182/wiki/pages/_search?pretty&_source=title&'+'size='+str(num)+'&from='+str(start)
     c.setopt(pycurl.URL, url)
     c.setopt(pycurl.CUSTOMREQUEST, "GET")
     c.setopt(pycurl.WRITEFUNCTION, b.write)
     c.setopt(pycurl.POSTFIELDS, searchjson)
     c.perform()
-    print b.getvalue()
+    #print b.getvalue()
     return b.getvalue()
